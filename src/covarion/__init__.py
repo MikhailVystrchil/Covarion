@@ -1,5 +1,8 @@
 from .covariance import NetworkCovariance
 from .ellipse import ErrorEllipse, error_ellipse_from_covariance
+from .point import GeodeticPoint
+from .network import GeodeticNetwork
+
 from .exceptions import (
     CoordinateDimensionError,
     CorrelationUndefinedError,
@@ -29,7 +32,7 @@ from .methods import (
     CovarianceMethod,
     ObservationCovarianceMethod,
 )
-from .network import GeodeticNetwork
+
 from .observations import (
     AzimuthObservation,
     ControlPointObservation,
@@ -39,9 +42,10 @@ from .observations import (
     LinearizedObservation,
     SlopeDistanceObservation,
     SpatialPolarObservation,
+    TotalStationSetup,
+    TotalStationSight,
     ZenithAngleObservation,
 )
-from .point import GeodeticPoint
 
 __all__ = [
     "AzimuthObservation",
@@ -83,4 +87,6 @@ __all__ = [
     "UnknownAxisError",
     "ZenithAngleObservation",
     "error_ellipse_from_covariance",
+    "TotalStationSetup",
+    "TotalStationSight",
 ]

@@ -9,35 +9,13 @@ from ..exceptions import (
     ObservationPrecisionError,
 )
 from ..network import GeodeticNetwork
+from ._line_of_sight import azimuth_design_row, line_of_sight_deltas
 from .base import LinearizedObservation
 
 
 @dataclass(frozen=True, slots=True)
 class AzimuthObservation:
-    """Azimuth from a north reference, clockwise, to a target point.
-       Horizontal direction from north, clockwise, from one point to another.
-
-    The direction is modelled as:
-
-        alpha = atan2(delta_east, delta_north)
-
-    where alpha is measured clockwise from the north direction.
-
-    Parameters
-    ----------
-    name
-        Human-readable observation identifier.
-    from_point
-        Instrument or backsight point.
-    to_point
-        Forward target point.
-    standard_deviation
-        A priori direction standard deviation in radians.
-    east_axis
-        Name of the east-oriented coordinate axis.
-    north_axis
-        Name of the north-oriented coordinate axis.
-    """
+    """Grid azimuth measured clockwise from north to a target point."""
 
     name: str
     from_point: str
@@ -45,21 +23,22 @@ class AzimuthObservation:
     standard_deviation: float
     east_axis: str = "E"
     north_axis: str = "N"
+    vertical_axis: str = "H"
 
     def __post_init__(self) -> None:
         if not isinstance(self.name, str) or not self.name.strip():
             raise ValueError(
-                "Direction observation name must be a non-empty string."
+                "Azimuth observation name must be a non-empty string."
             )
 
         if self.from_point == self.to_point:
             raise ObservationGeometryError(
-                "Direction observation requires two distinct points."
+                "Azimuth observation requires two distinct points."
             )
 
         if self.standard_deviation <= 0.0:
             raise ObservationPrecisionError(
-                "Direction standard deviation must be positive."
+                "Azimuth standard deviation must be positive."
             )
 
         if self.east_axis == self.north_axis:
@@ -71,53 +50,46 @@ class AzimuthObservation:
             self,
             network: GeodeticNetwork,
     ) -> float:
-        """Return the current azimuth in radians in [0, 2π)."""
-        delta_east, delta_north = self._horizontal_delta(network)
+        """Return the current grid azimuth in radians in [0, 2π)."""
+        source_coordinates = network.point(
+            self.from_point
+        ).coordinate_map
+        target_coordinates = network.point(
+            self.to_point
+        ).coordinate_map
 
-        angle = float(np.arctan2(delta_east, delta_north))
-        return angle % (2.0 * np.pi)
+        delta_east = float(
+            target_coordinates[self.east_axis]
+            - source_coordinates[self.east_axis]
+        )
+        delta_north = float(
+            target_coordinates[self.north_axis]
+            - source_coordinates[self.north_axis]
+        )
+
+        if np.isclose(delta_east ** 2 + delta_north ** 2, 0.0):
+            raise ObservationGeometryError(
+                f"Azimuth observation {self.name!r} is undefined for "
+                "zero horizontal separation."
+            )
+
+        return float(
+            np.arctan2(delta_east, delta_north) % (2.0 * np.pi)
+        )
 
     def linearize(
         self,
         network: GeodeticNetwork,
     ) -> LinearizedObservation:
-        """Return the linearized direction equation and covariance block."""
-        delta_east, delta_north = self._horizontal_delta(network)
-        squared_horizontal_distance = (
-            delta_east**2 + delta_north**2
-        )
-
-        if np.isclose(squared_horizontal_distance, 0.0):
-            raise ObservationGeometryError(
-                f"Direction observation {self.name!r} is undefined because "
-                f"points {self.from_point!r} and {self.to_point!r} have "
-                "zero horizontal separation."
-            )
-
-        row = np.zeros((1, network.dimension), dtype=float)
-
-        from_slice = network.point_slice(self.from_point)
-        to_slice = network.point_slice(self.to_point)
-
-        from_point = network.point(self.from_point)
-        to_point = network.point(self.to_point)
-
-        from_east = from_slice.start + from_point.axis_index(
-            self.east_axis
-        )
-        from_north = from_slice.start + from_point.axis_index(
-            self.north_axis
-        )
-        to_east = to_slice.start + to_point.axis_index(self.east_axis)
-        to_north = to_slice.start + to_point.axis_index(self.north_axis)
-
-        row[0, from_east] = -delta_north / squared_horizontal_distance
-        row[0, from_north] = delta_east / squared_horizontal_distance
-        row[0, to_east] = delta_north / squared_horizontal_distance
-        row[0, to_north] = -delta_east / squared_horizontal_distance
-
+        """Return a linearized azimuth equation."""
         return LinearizedObservation(
-            design_matrix=row,
+            design_matrix=azimuth_design_row(
+                network,
+                from_point=self.from_point,
+                to_point=self.to_point,
+                east_axis=self.east_axis,
+                north_axis=self.north_axis,
+            ),
             covariance=np.array(
                 [[self.standard_deviation**2]],
                 dtype=float,
@@ -125,25 +97,3 @@ class AzimuthObservation:
             observation_type="azimuth",
             labels=(self.name,),
         )
-
-    def _horizontal_delta(
-        self,
-        network: GeodeticNetwork,
-    ) -> tuple[float, float]:
-        """Return ΔE and ΔN from the occupied point to the target."""
-        from_point = network.point(self.from_point)
-        to_point = network.point(self.to_point)
-
-        from_coordinates = from_point.coordinate_map
-        to_coordinates = to_point.coordinate_map
-
-        delta_east = (
-            to_coordinates[self.east_axis]
-            - from_coordinates[self.east_axis]
-        )
-        delta_north = (
-            to_coordinates[self.north_axis]
-            - from_coordinates[self.north_axis]
-        )
-
-        return float(delta_east), float(delta_north)

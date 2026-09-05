@@ -9,24 +9,16 @@ from ..exceptions import (
     ObservationPrecisionError,
 )
 from ..network import GeodeticNetwork
+from ._line_of_sight import (
+    line_of_sight_deltas,
+    zenith_angle_design_row,
+)
 from .base import LinearizedObservation
 
 
 @dataclass(frozen=True, slots=True)
 class ZenithAngleObservation:
-    """Zenith angle from vertical at the occupied point to a target point.
-
-    The angle is measured from the upward vertical direction:
-
-        z = atan2(horizontal_distance, delta_vertical)
-
-    Therefore:
-        z = 0       for a target directly above,
-        z = π / 2   for a horizontal sight,
-        z = π       for a target directly below.
-
-    Standard deviation is expressed in radians.
-    """
+    """Zenith angle measured from upward vertical to a target point."""
 
     name: str
     from_point: str
@@ -66,12 +58,25 @@ class ZenithAngleObservation:
         self,
         network: GeodeticNetwork,
     ) -> float:
-        """Return current zenith angle in radians in [0, π]."""
-        delta_east, delta_north, delta_vertical = self._delta(network)
+        """Return the current zenith angle in radians in [0, π]."""
+        delta_east, delta_north, delta_vertical = line_of_sight_deltas(
+            network,
+            from_point=self.from_point,
+            to_point=self.to_point,
+            east_axis=self.east_axis,
+            north_axis=self.north_axis,
+            vertical_axis=self.vertical_axis,
+        )
 
         horizontal_distance = float(
             np.hypot(delta_east, delta_north)
         )
+
+        if np.isclose(horizontal_distance, 0.0):
+            raise ObservationGeometryError(
+                f"Zenith-angle observation {self.name!r} has a vertical "
+                "sight; linearization is undefined."
+            )
 
         return float(np.arctan2(horizontal_distance, delta_vertical))
 
@@ -79,114 +84,20 @@ class ZenithAngleObservation:
         self,
         network: GeodeticNetwork,
     ) -> LinearizedObservation:
-        """Return linearized zenith-angle equation and covariance block."""
-        delta_east, delta_north, delta_vertical = self._delta(network)
-
-        horizontal_distance = float(
-            np.hypot(delta_east, delta_north)
-        )
-        squared_spatial_distance = (
-            delta_east**2
-            + delta_north**2
-            + delta_vertical**2
-        )
-
-        if np.isclose(horizontal_distance, 0.0):
-            raise ObservationGeometryError(
-                f"Zenith-angle observation {self.name!r} is undefined "
-                "for a vertical sight because horizontal direction is "
-                "not differentiable."
-            )
-
-        if np.isclose(squared_spatial_distance, 0.0):
-            raise ObservationGeometryError(
-                f"Zenith-angle observation {self.name!r} connects "
-                "coincident points."
-            )
-
-        row = np.zeros((1, network.dimension), dtype=float)
-
-        from_slice = network.point_slice(self.from_point)
-        to_slice = network.point_slice(self.to_point)
-
-        from_point = network.point(self.from_point)
-        to_point = network.point(self.to_point)
-
-        from_east = from_slice.start + from_point.axis_index(
-            self.east_axis
-        )
-        from_north = from_slice.start + from_point.axis_index(
-            self.north_axis
-        )
-        from_vertical = from_slice.start + from_point.axis_index(
-            self.vertical_axis
-        )
-
-        to_east = to_slice.start + to_point.axis_index(self.east_axis)
-        to_north = to_slice.start + to_point.axis_index(
-            self.north_axis
-        )
-        to_vertical = to_slice.start + to_point.axis_index(
-            self.vertical_axis
-        )
-
-        horizontal_denominator = (
-            horizontal_distance * squared_spatial_distance
-        )
-
-        row[0, from_east] = (
-            -delta_east * delta_vertical / horizontal_denominator
-        )
-        row[0, from_north] = (
-            -delta_north * delta_vertical / horizontal_denominator
-        )
-        row[0, from_vertical] = (
-            horizontal_distance / squared_spatial_distance
-        )
-
-        row[0, to_east] = (
-            delta_east * delta_vertical / horizontal_denominator
-        )
-        row[0, to_north] = (
-            delta_north * delta_vertical / horizontal_denominator
-        )
-        row[0, to_vertical] = (
-            -horizontal_distance / squared_spatial_distance
-        )
-
+        """Return a linearized zenith-angle equation."""
         return LinearizedObservation(
-            design_matrix=row,
+            design_matrix=zenith_angle_design_row(
+                network,
+                from_point=self.from_point,
+                to_point=self.to_point,
+                east_axis=self.east_axis,
+                north_axis=self.north_axis,
+                vertical_axis=self.vertical_axis,
+            ),
             covariance=np.array(
                 [[self.standard_deviation**2]],
                 dtype=float,
             ),
             observation_type="zenith-angle",
             labels=(self.name,),
-        )
-
-    def _delta(
-        self,
-        network: GeodeticNetwork,
-    ) -> tuple[float, float, float]:
-        """Return ΔE, ΔN and ΔH from occupied to target point."""
-        from_coordinates = network.point(
-            self.from_point
-        ).coordinate_map
-        to_coordinates = network.point(
-            self.to_point
-        ).coordinate_map
-
-        return (
-            float(
-                to_coordinates[self.east_axis]
-                - from_coordinates[self.east_axis]
-            ),
-            float(
-                to_coordinates[self.north_axis]
-                - from_coordinates[self.north_axis]
-            ),
-            float(
-                to_coordinates[self.vertical_axis]
-                - from_coordinates[self.vertical_axis]
-            ),
         )

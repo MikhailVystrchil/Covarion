@@ -1,4 +1,3 @@
-# src/covarion/observations/slope_distance.py
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -15,13 +14,16 @@ from .base import LinearizedObservation
 
 @dataclass(frozen=True, slots=True)
 class SlopeDistanceObservation:
-    """Slope distance between two geodetic network points.
+    """Euclidean distance between two geodetic network points.
 
-    The observation model is the Euclidean spatial distance:
+    The observation model is:
 
         s = ||p_to - p_from||
 
-    All coordinate components of the network contribute to the design row.
+    It is deliberately independent of axis names. Therefore it can be used
+    for 1D, 2D, and 3D networks whose points share the same ordered axes,
+    such as ``("X", "Y")``, ``("E", "N")``, ``("X", "Y", "H")``, or
+    ``("E", "N", "H")``.
 
     The a priori standard-deviation model is:
 
@@ -41,6 +43,24 @@ class SlopeDistanceObservation:
         if not isinstance(self.name, str) or not self.name.strip():
             raise ValueError(
                 "Slope-distance observation name must be a non-empty string."
+            )
+
+        if not isinstance(
+            self.from_point,
+            str,
+        ) or not self.from_point.strip():
+            raise ValueError(
+                "Slope-distance source point name must be a non-empty "
+                "string."
+            )
+
+        if not isinstance(
+            self.to_point,
+            str,
+        ) or not self.to_point.strip():
+            raise ValueError(
+                "Slope-distance target point name must be a non-empty "
+                "string."
             )
 
         if self.from_point == self.to_point:
@@ -68,23 +88,15 @@ class SlopeDistanceObservation:
         self,
         network: GeodeticNetwork,
     ) -> float:
-        """Return the current spatial distance between two points."""
-        start = np.asarray(
-            network.point(self.from_point).coordinates,
-            dtype=float,
-        )
-        end = np.asarray(
-            network.point(self.to_point).coordinates,
-            dtype=float,
-        )
-
-        return float(np.linalg.norm(end - start))
+        """Return Euclidean distance between the two current point estimates."""
+        delta = self._coordinate_delta(network)
+        return float(np.linalg.norm(delta))
 
     def standard_deviation(
         self,
         network: GeodeticNetwork,
     ) -> float:
-        """Return the a priori standard deviation of the slope distance."""
+        """Return a priori slope-distance standard deviation."""
         distance = self.slope_distance(network)
         scale_component = self.ppm_error * 1e-6 * distance
 
@@ -94,17 +106,8 @@ class SlopeDistanceObservation:
         self,
         network: GeodeticNetwork,
     ) -> LinearizedObservation:
-        """Return a linearized slope-distance equation."""
-        start = np.asarray(
-            network.point(self.from_point).coordinates,
-            dtype=float,
-        )
-        end = np.asarray(
-            network.point(self.to_point).coordinates,
-            dtype=float,
-        )
-
-        delta = end - start
+        """Return a linearized Euclidean-distance observation equation."""
+        delta = self._coordinate_delta(network)
         distance = float(np.linalg.norm(delta))
 
         if np.isclose(distance, 0.0):
@@ -128,3 +131,19 @@ class SlopeDistanceObservation:
             observation_type="slope-distance",
             labels=(self.name,),
         )
+
+    def _coordinate_delta(
+        self,
+        network: GeodeticNetwork,
+    ) -> np.ndarray:
+        """Return target-minus-source coordinates in network axis order."""
+        source = np.asarray(
+            network.point(self.from_point).coordinates,
+            dtype=float,
+        )
+        target = np.asarray(
+            network.point(self.to_point).coordinates,
+            dtype=float,
+        )
+
+        return target - source

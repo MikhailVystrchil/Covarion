@@ -1,20 +1,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Mapping
+from typing import TYPE_CHECKING, Mapping
 
 import numpy as np
 from numpy.typing import NDArray
 
+from .covariance import NetworkCovariance
 from .exceptions import (
     DuplicatePointNameError,
     IncompatiblePointAxesError,
     NetworkCovarianceShapeError,
     NetworkError,
 )
-from .covariance import NetworkCovariance
-from .methods.base import CovarianceMethod
 from .point import GeodeticPoint
+
+if TYPE_CHECKING:
+    from .methods.base import CovarianceMethod
 
 FloatMatrix = NDArray[np.float64]
 
@@ -135,24 +137,33 @@ class GeodeticNetwork:
             method: CovarianceMethod,
     ) -> NetworkCovariance:
         """Obtain a validated covariance matrix using an injected method."""
-        if not isinstance(method, CovarianceMethod):
+        method_name = getattr(method, "name", None)
+        method_compute = getattr(method, "compute", None)
+
+        if not isinstance(method_name, str) or not method_name.strip():
             raise TypeError(
-                "method must implement CovarianceMethod with 'name' and "
-                "'compute(network)'."
+                "method must implement CovarianceMethod with a non-empty "
+                "string 'name' attribute."
             )
 
-        covariance = method.compute(self)
+        if not callable(method_compute):
+            raise TypeError(
+                "method must implement CovarianceMethod with a callable "
+                "'compute(network)' method."
+            )
+
+        covariance = method_compute(self)
 
         if not isinstance(covariance, NetworkCovariance):
             raise TypeError(
-                f"Method {method.name!r} must return NetworkCovariance, "
+                f"Method {method_name!r} must return NetworkCovariance, "
                 f"got {type(covariance).__name__}."
             )
 
         if covariance.parameter_names != self.parameter_names:
             raise NetworkCovarianceShapeError(
-                f"Method {method.name!r} returned covariance with an incompatible "
-                "parameter order."
+                f"Method {method_name!r} returned covariance with an "
+                "incompatible parameter order."
             )
 
         return covariance

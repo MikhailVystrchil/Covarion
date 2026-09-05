@@ -317,5 +317,8 @@ def test_method_failure_is_propagated(
 def test_network_rejects_object_that_is_not_covariance_method(
     network: GeodeticNetwork,
 ) -> None:
-    with pytest.raises(TypeError, match="CovarianceMethod"):
-        network.compute_covariance(object())  # type: ignore[arg-type]
+    with pytest.raises(
+            TypeError,
+            match="method must implement CovarianceMethod",
+    ):
+        network.compute_covariance(object())
