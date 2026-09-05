@@ -18,6 +18,9 @@ from .exceptions import (
     IncompatiblePointAxesError,
     NetworkCovarianceError,
     NetworkCovarianceShapeError,
+    ObservationError,
+    ObservationGeometryError,
+    ObservationPrecisionError
 )
 from .point import GeodeticPoint
 
@@ -32,9 +35,12 @@ from .covariance import NetworkCovariance
 
 from .observations import (
     ControlPointObservation,
+    AzimuthObservation,
     DistanceObservation,
     GeodeticObservation,
+    HeightDifferenceObservation,
     LinearizedObservation,
+    ZenithAngleObservation,
 )
 
 __all__ = [
@@ -58,10 +64,16 @@ __all__ = [
     "IncompatiblePointAxesError",
     "NetworkCovarianceError",
     "NetworkCovarianceShapeError",
+    "ObservationError",
+    "ObservationGeometryError",
+    "ObservationPrecisionError",
     "error_ellipse_from_covariance",
     "BlockDiagonalCovarianceMethod",
     "CovarianceMethod",
     "GeodeticNetwork",
     "NetworkCovariance",
     "ControlPointObservation",
-    ]
+    "AzimuthObservation",
+    "HeightDifferenceObservation",
+    "ZenithAngleObservation",
+]

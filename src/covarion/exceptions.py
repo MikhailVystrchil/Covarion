@@ -76,3 +76,15 @@ class NetworkCovarianceShapeError(NetworkCovarianceError):
 
 class CovarianceMethodError(NetworkError):
     """Raised when a covariance method cannot be applied to a network."""
+
+
+class ObservationError(CovarionError, ValueError):
+    """Base exception for invalid geodetic observations."""
+
+
+class ObservationGeometryError(ObservationError):
+    """Raised when network geometry makes an observation undefined."""
+
+
+class ObservationPrecisionError(ObservationError):
+    """Raised when an observation precision model is invalid."""
