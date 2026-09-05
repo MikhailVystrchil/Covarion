@@ -24,10 +24,18 @@ from .point import GeodeticPoint
 from .methods import (
     BlockDiagonalCovarianceMethod,
     CovarianceMethod,
+    ObservationCovarianceMethod,
 )
 from .network import GeodeticNetwork
 
 from .covariance import NetworkCovariance
+
+from .observations import (
+    CoordinateObservation,
+    DistanceObservation,
+    GeodeticObservation,
+    LinearizedObservation,
+)
 
 __all__ = [
     "CoordinateDimensionError",
