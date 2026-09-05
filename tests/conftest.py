@@ -68,3 +68,59 @@ def network(
             "epoch": "2026-09-05",
         },
     )
+
+
+@pytest.fixture
+def baseline_network_2d() -> GeodeticNetwork:
+    """Two-point horizontal baseline, 100 m long and aligned with X."""
+    return GeodeticNetwork(
+        name="2D baseline",
+        points=(
+            GeodeticPoint(
+                name="A",
+                coordinates=(0.0, 0.0),
+                axes=("X", "Y"),
+                covariance=np.eye(2),
+            ),
+            GeodeticPoint(
+                name="B",
+                coordinates=(100.0, 0.0),
+                axes=("X", "Y"),
+                covariance=np.eye(2),
+            ),
+        ),
+        metadata={
+            "coordinate_system": "local-engineering",
+        },
+    )
+
+
+@pytest.fixture
+def triangle_network_2d() -> GeodeticNetwork:
+    """Non-collinear 2D distance network used for datum tests."""
+    return GeodeticNetwork(
+        name="2D distance triangle",
+        points=(
+            GeodeticPoint(
+                name="A",
+                coordinates=(0.0, 0.0),
+                axes=("X", "Y"),
+                covariance=np.eye(2),
+            ),
+            GeodeticPoint(
+                name="B",
+                coordinates=(100.0, 0.0),
+                axes=("X", "Y"),
+                covariance=np.eye(2),
+            ),
+            GeodeticPoint(
+                name="C",
+                coordinates=(100.0, 80.0),
+                axes=("X", "Y"),
+                covariance=np.eye(2),
+            ),
+        ),
+        metadata={
+            "coordinate_system": "local-engineering",
+        },
+    )

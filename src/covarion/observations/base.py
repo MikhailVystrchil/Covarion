@@ -44,3 +44,18 @@ class GeodeticObservation(Protocol):
         network: GeodeticNetwork,
     ) -> LinearizedObservation:
         """Return a design-matrix block and an observation covariance block."""
+
+
+@runtime_checkable
+class HardConstraint(Protocol):
+    """Protocol for an exact linear constraint on network parameters."""
+
+    @property
+    def name(self) -> str:
+        ...
+
+    def design_matrix(
+        self,
+        network: GeodeticNetwork,
+    ) -> FloatMatrix:
+        """Return G in G Δx = 0."""

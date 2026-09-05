@@ -1,9 +1,9 @@
 from .base import GeodeticObservation, LinearizedObservation
-from .coordinate import CoordinateObservation
+from .control import ControlPointObservation
 from .distance import DistanceObservation
 
 __all__ = [
-    "CoordinateObservation",
+    "ControlPointObservation",
     "DistanceObservation",
     "GeodeticObservation",
     "LinearizedObservation",

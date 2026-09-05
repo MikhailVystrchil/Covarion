@@ -31,7 +31,7 @@ from .network import GeodeticNetwork
 from .covariance import NetworkCovariance
 
 from .observations import (
-    CoordinateObservation,
+    ControlPointObservation,
     DistanceObservation,
     GeodeticObservation,
     LinearizedObservation,
@@ -63,4 +63,5 @@ __all__ = [
     "CovarianceMethod",
     "GeodeticNetwork",
     "NetworkCovariance",
+    "ControlPointObservation",
     ]

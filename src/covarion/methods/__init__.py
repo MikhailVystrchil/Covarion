@@ -5,7 +5,7 @@ from .observation_covariance import ObservationCovarianceMethod
 __all__ = [
     "BlockDiagonalCovarianceMethod",
     "CovarianceMethod",
-"BlockDiagonalCovarianceMethod",
+    "BlockDiagonalCovarianceMethod",
     "CovarianceMethod",
     "ObservationCovarianceMethod",
 ]
