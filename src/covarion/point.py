@@ -6,6 +6,8 @@ from typing import Any, Mapping, Sequence
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
+from .ellipse import ErrorEllipse, error_ellipse_from_covariance
+
 from .exceptions import (
     CoordinateDimensionError,
     CorrelationUndefinedError,
@@ -16,6 +18,7 @@ from .exceptions import (
     NonFiniteCovarianceError,
     PointValidationError,
     UnknownAxisError,
+    CovarianceError,
 )
 
 FloatArray = NDArray[np.float64]
@@ -194,3 +197,33 @@ class GeodeticPoint:
         covariance = self._require_covariance()
         indices = [self.axis_index(axis) for axis in axes]
         return covariance[np.ix_(indices, indices)]
+
+    def horizontal_error_ellipse(
+            self,
+            *,
+            horizontal_axes: tuple[str, str] = ("X", "Y"),
+            scale: float = 1.0,
+    ) -> ErrorEllipse:
+        """Return the horizontal error ellipse for two selected axes.
+
+        Parameters
+        ----------
+        horizontal_axes
+            Ordered pair of coordinate-axis names used as the horizontal plane.
+            The default is ``("X", "Y")``.
+        scale
+            Positive scale factor applied to the ellipse semiaxes. Use ``1.0``
+            for the standard covariance ellipse.
+        """
+        if len(horizontal_axes) != 2:
+            raise CoordinateDimensionError(
+                "A horizontal error ellipse requires exactly two axes."
+            )
+
+        covariance = self.covariance_block(horizontal_axes)
+
+        return error_ellipse_from_covariance(
+            covariance,
+            scale=scale,
+            tolerance=self.psd_tolerance,
+        )

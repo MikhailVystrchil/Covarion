@@ -181,3 +181,75 @@ def test_correlation_is_undefined_for_zero_variance() -> None:
 
     with pytest.raises(CorrelationUndefinedError):
         _ = point.correlation_matrix
+
+def test_horizontal_error_ellipse_uses_selected_covariance_block(
+    point_3d: GeodeticPoint,
+) -> None:
+    ellipse = point_3d.horizontal_error_ellipse()
+
+    expected = point_3d.covariance_block(("X", "Y"))
+    eigenvalues = np.linalg.eigvalsh(expected)
+
+    assert ellipse.major_semiaxis == pytest.approx(
+        np.sqrt(eigenvalues.max())
+    )
+    assert ellipse.minor_semiaxis == pytest.approx(
+        np.sqrt(eigenvalues.min())
+    )
+
+
+def test_horizontal_error_ellipse_accepts_custom_axes(
+    point_3d: GeodeticPoint,
+) -> None:
+    ellipse = point_3d.horizontal_error_ellipse(
+        horizontal_axes=("Y", "H"),
+    )
+
+    expected = point_3d.covariance_block(("Y", "H"))
+    eigenvalues = np.linalg.eigvalsh(expected)
+
+    assert ellipse.major_semiaxis == pytest.approx(
+        np.sqrt(eigenvalues.max())
+    )
+    assert ellipse.minor_semiaxis == pytest.approx(
+        np.sqrt(eigenvalues.min())
+    )
+
+
+def test_horizontal_error_ellipse_preserves_scale(
+    point_3d: GeodeticPoint,
+) -> None:
+    ellipse = point_3d.horizontal_error_ellipse(scale=2.4477)
+
+    assert ellipse.scale == pytest.approx(2.4477)
+    assert ellipse.major_semiaxis_scaled == pytest.approx(
+        ellipse.major_semiaxis * 2.4477
+    )
+    assert ellipse.minor_semiaxis_scaled == pytest.approx(
+        ellipse.minor_semiaxis * 2.4477
+    )
+
+
+def test_horizontal_error_ellipse_rejects_unknown_axis(
+    point_3d: GeodeticPoint,
+) -> None:
+    with pytest.raises(UnknownAxisError):
+        point_3d.horizontal_error_ellipse(
+            horizontal_axes=("X", "Z"),
+        )
+
+
+@pytest.mark.parametrize(
+    "axes",
+    [
+        (),
+        ("X",),
+        ("X", "Y", "H"),
+    ],
+)
+def test_horizontal_error_ellipse_requires_exactly_two_axes(
+    point_3d: GeodeticPoint,
+    axes: tuple[str, ...],
+) -> None:
+    with pytest.raises(CoordinateDimensionError, match="exactly two"):
+        point_3d.horizontal_error_ellipse(horizontal_axes=axes)
