@@ -38,6 +38,7 @@ from .observations import (
     HorizontalDistanceObservation,
     LinearizedObservation,
     SlopeDistanceObservation,
+    SpatialPolarObservation,
     ZenithAngleObservation,
 )
 from .point import GeodeticPoint
@@ -78,6 +79,7 @@ __all__ = [
     "ObservationPrecisionError",
     "PointValidationError",
     "SlopeDistanceObservation",
+    "SpatialPolarObservation",
     "UnknownAxisError",
     "ZenithAngleObservation",
     "error_ellipse_from_covariance",
