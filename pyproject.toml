@@ -2,7 +2,7 @@
 name = "covarion"
 version = "0.1.0"
 description = "Reconstruction and validation of covariance matrices in geodetic networks."
-authors = ["Mihail Vystrcil"]
+authors = ["Mikhail Vystrcil"]
 readme = "README.md"
 packages = [
     { include = "covarion", from = "src" },
@@ -11,9 +11,11 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
 numpy = "^2.0.0"
+ipykernel = "^7.3.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
+ipykernel = "^7.3.0"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
