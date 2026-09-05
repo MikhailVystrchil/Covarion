@@ -8,26 +8,26 @@ from covarion.exceptions import CovarianceMethodError
 from covarion.methods import ObservationCovarianceMethod
 from covarion.observations import (
     ControlPointObservation,
-    DistanceObservation,
+    SlopeDistanceObservation,
 )
 
 
-def _triangle_distances() -> tuple[DistanceObservation, ...]:
+def _triangle_distances() -> tuple[SlopeDistanceObservation, ...]:
     """Return the three independent side-length observations of ABC."""
     return (
-        DistanceObservation(
+        SlopeDistanceObservation(
             name="d_AB",
             from_point="A",
             to_point="B",
             constant_error=0.002,
         ),
-        DistanceObservation(
+        SlopeDistanceObservation(
             name="d_AC",
             from_point="A",
             to_point="C",
             constant_error=0.002,
         ),
-        DistanceObservation(
+        SlopeDistanceObservation(
             name="d_BC",
             from_point="B",
             to_point="C",
@@ -323,7 +323,7 @@ def test_observation_method_stores_distance_labels(
         "d_BC",
     )
     assert covariance.metadata["stochastic_observation_types"] == (
-        "distance",
-        "distance",
-        "distance",
+        "slope-distance",
+        "slope-distance",
+        "slope-distance",
     )
