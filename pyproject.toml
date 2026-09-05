@@ -1,16 +1,27 @@
-[project]
+[tool.poetry]
 name = "covarion"
 version = "0.1.0"
-description = ""
-authors = [
-    {name = "MikhailVystrchil",email = "Ratven@yandex.ru"}
-]
+description = "Reconstruction and validation of covariance matrices in geodetic networks."
+authors = ["Mihail Vystrcil"]
 readme = "README.md"
-requires-python = ">=3.12"
-dependencies = [
+packages = [
+    { include = "covarion", from = "src" },
 ]
 
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"
+numpy = "^2.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = [
+    "--import-mode=importlib",
+]
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
+requires = ["poetry-core>=1.9.0"]
 build-backend = "poetry.core.masonry.api"
