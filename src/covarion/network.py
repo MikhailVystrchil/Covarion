@@ -83,6 +83,10 @@ class GeodeticNetwork:
             for axis in self.axes
         )
 
+    def point(self, point_name: str) -> GeodeticPoint:
+        """Return a point by its unique network name."""
+        return self.points[self.point_index(point_name)]
+
     def point_index(self, point_name: str) -> int:
         """Return the position of a point in network order."""
         for index, point in enumerate(self.points):
