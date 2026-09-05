@@ -53,3 +53,26 @@ class EllipseError(CovarionError, ValueError):
 
 class EllipseDimensionError(EllipseError):
     """Raised when an ellipse receives data other than a 2×2 covariance block."""
+
+class NetworkError(CovarionError):
+    """Base exception for geodetic network errors."""
+
+
+class DuplicatePointNameError(NetworkError, ValueError):
+    """Raised when two network points have the same name."""
+
+
+class IncompatiblePointAxesError(NetworkError, ValueError):
+    """Raised when network points use incompatible coordinate axes."""
+
+
+class NetworkCovarianceError(NetworkError, ValueError):
+    """Raised when a global network covariance matrix is invalid."""
+
+
+class NetworkCovarianceShapeError(NetworkCovarianceError):
+    """Raised when global covariance shape does not match network size."""
+
+
+class CovarianceMethodError(NetworkError):
+    """Raised when a covariance method cannot be applied to a network."""
