@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import numpy as np
+import matplotlib
 import pytest
 
 from covarion.point import GeodeticPoint
 from covarion.network import GeodeticNetwork
+
+
+matplotlib.use("Agg")
+
 
 @pytest.fixture
 def point_3d() -> GeodeticPoint:
