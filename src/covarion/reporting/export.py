@@ -3,8 +3,77 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    import pandas as pd
+import numpy as np
+import pandas as pd
+
+from covarion.covariance import NetworkCovariance
+
+
+def export_covariance_matrix_csv(
+    covariance: NetworkCovariance,
+    path: str | Path,
+    *,
+    separator: str = ";",
+    decimal: str = ".",
+    encoding: str = "utf-8",
+    float_format: str = "%.12e",
+) -> Path:
+    """
+    Export the full covariance matrix to a labelled CSV file.
+
+    Rows and columns use covariance.parameter_names. The first column
+    is named ``parameter`` and contains row labels.
+    """
+
+    target_path = _prepare_target_path(
+        path,
+        expected_suffix=".csv",
+    )
+
+    covariance_frame = _covariance_dataframe(covariance)
+
+    covariance_frame.to_csv(
+        target_path,
+        sep=separator,
+        decimal=decimal,
+        encoding=encoding,
+        index=True,
+        index_label="parameter",
+        float_format=float_format,
+        lineterminator="\n",
+    )
+
+    return target_path
+def export_covariance_matrix_txt(
+    covariance: NetworkCovariance,
+    path: str | Path,
+    *,
+    title: str = "Covarion covariance matrix report",
+    encoding: str = "utf-8",
+    float_format: str = ".6e",
+) -> Path:
+    """
+    Export the full covariance matrix as a readable text report.
+    """
+
+    target_path = _prepare_target_path(
+        path,
+        expected_suffix=".txt",
+    )
+
+    report_text = _covariance_matrix_text(
+        covariance,
+        title=title,
+        float_format=float_format,
+    )
+
+    target_path.write_text(
+        report_text,
+        encoding=encoding,
+        newline="\n",
+    )
+
+    return target_path
 
 
 def export_point_results_csv(
@@ -142,3 +211,89 @@ def _point_results_text(
     )
 
     return "\n".join(lines)
+
+
+def _covariance_dataframe(
+    covariance: NetworkCovariance,
+) -> pd.DataFrame:
+    return pd.DataFrame(
+        np.asarray(
+            covariance.matrix,
+            dtype=float,
+        ),
+        index=covariance.parameter_names,
+        columns=covariance.parameter_names,
+    )
+
+
+def _covariance_matrix_text(
+    covariance: NetworkCovariance,
+    *,
+    title: str,
+    float_format: str,
+) -> str:
+    covariance_frame = _covariance_dataframe(covariance)
+
+    lines = [
+        title,
+        "=" * len(title),
+        "",
+        f"Method: {covariance.method_name}",
+        f"Points: {', '.join(covariance.point_names)}",
+        f"Axes: {', '.join(covariance.axes)}",
+        f"Dimension: {covariance.matrix.shape[0]}",
+        "",
+        "Covariance matrix:",
+        covariance_frame.to_string(
+            float_format=lambda value: format(
+                value,
+                float_format,
+            ),
+        ),
+        "",
+    ]
+
+    metadata_lines = _covariance_metadata_lines(
+        covariance,
+    )
+
+    if metadata_lines:
+        lines.extend(
+            (
+                "Method metadata:",
+                *metadata_lines,
+                "",
+            )
+        )
+
+    return "\n".join(lines)
+
+
+def _covariance_metadata_lines(
+    covariance: NetworkCovariance,
+) -> tuple[str, ...]:
+    metadata_names = (
+        "normal_rank",
+        "condition_number",
+        "datum_kind",
+    )
+
+    lines: list[str] = []
+
+    for metadata_name in metadata_names:
+        if not hasattr(covariance, metadata_name):
+            continue
+
+        value = getattr(
+            covariance,
+            metadata_name,
+        )
+
+        if value is None:
+            continue
+
+        lines.append(
+            f"  {metadata_name}: {value}"
+        )
+
+    return tuple(lines)
