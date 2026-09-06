@@ -51,8 +51,8 @@ class ErrorEllipseLayer(NetworkLayer):
 
             ellipse = Ellipse(
                 xy=(
-                    point.coordinates["E"],
-                    point.coordinates["N"],
+                    float(point.coordinates[0]),
+                    float(point.coordinates[1]),
                 ),
                 width=width * self.display_scale,
                 height=height * self.display_scale,
